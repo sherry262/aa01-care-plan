@@ -1,298 +1,857 @@
-// Google Apps Script for AA01 Care Plan System
-// 簡化版本 - 桃園市私立群和居家A單位
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AA01照顧計畫擬訂與服務連結系統</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-// ========== 設定區域 ==========
-const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID_HERE'; // 請替換為您的 Google Sheets ID
-const SHEET_NAME = 'AA01資料';
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
 
-// ========== 主要處理函式 ==========
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-/**
- * 處理 POST 請求
- */
-function doPost(e) {
-  try {
-    // 解析請求
-    const requestData = JSON.parse(e.postData.contents);
-    const action = requestData.action;
-    const data = requestData.data;
-    
-    let result;
-    
-    switch (action) {
-      case 'save':
-        result = saveToSheet(data);
-        break;
-      case 'test':
-        result = { success: true, message: '連線測試成功' };
-        break;
-      default:
-        result = { success: false, error: '不支援的操作' };
-    }
-    
-    return createResponse(result);
-    
-  } catch (error) {
-    console.error('處理請求失敗:', error);
-    return createResponse({ success: false, error: error.toString() });
-  }
-}
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
 
-/**
- * 處理 GET 請求（測試用）
- */
-function doGet(e) {
-  return createResponse({ 
-    success: true, 
-    message: 'AA01照顧計畫系統後端運作正常',
-    timestamp: new Date().toISOString()
-  });
-}
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
 
-/**
- * 儲存資料到 Google Sheets
- */
-function saveToSheet(data) {
-  try {
-    const sheet = getOrCreateSheet();
-    
-    // 檢查是否已存在相同用戶的資料（根據用戶名稱和日期）
-    const existingRowIndex = findExistingRow(sheet, data.userName, data.visitDate);
-    
-    const rowData = [
-      new Date().toISOString(), // 時間戳記
-      data.userName || '',      // 用戶姓名
-      data.visitDate || '',     // 家訪日期
-      data.dischargeDate || '', // 出院日期
-      data.visitWith || '',     // 偕同訪視者
-      data.physicalMental || '',// 身心概況
-      data.economicIncome || '',// 經濟收入
-      data.livingEnvironment || '', // 居住環境
-      data.socialSupport || '', // 社會支持
-      data.others || '',        // 其他
-      data.reevaluation || '',  // 複評評值
-      data.previousGoals || '', // 上次計畫目標
-      data.currentGoals || '',  // 本次問題清單
-      data.inconsistencyReason || '', // 不一致原因說明
-      data.bCodeNotes || '',    // B碼服務（自動生成的備註）
-      data.cCode || '',         // C碼服務
-      data.dCodeNotes || '',    // D碼服務（自動生成的備註）
-      data.efCodeNotes || '',   // EF碼服務（自動生成的備註）
-      data.gCode || '',         // G碼服務
-      data.scCode || '',        // SC碼
-      data.mealService || '',   // 營養餐飲服務
-      data.emergencyService || '', // 緊急救援服務
-      data.referralServices || '', // 轉介其他服務資源
-      data.caseManager || '',   // 個案管理員
-      data.additionalNotes || '',  // 其他備註
-      data.bCodeData || '',     // B碼原始資料（JSON格式）
-      data.selectedDCodes || '', // D碼原始資料
-      data.selectedEFCodes || '' // EF碼原始資料
-    ];
-    
-    if (existingRowIndex > 0) {
-      // 更新現有資料
-      sheet.getRange(existingRowIndex, 1, 1, rowData.length).setValues([rowData]);
-      console.log('資料已更新，行數:', existingRowIndex);
-    } else {
-      // 新增資料
-      sheet.appendRow(rowData);
-      console.log('新資料已新增');
-    }
-    
-    return { 
-      success: true, 
-      message: '資料已儲存到 Google Sheets',
-      action: existingRowIndex > 0 ? 'updated' : 'created',
-      timestamp: new Date().toISOString()
-    };
-    
-  } catch (error) {
-    console.error('儲存失敗:', error);
-    return { success: false, error: error.toString() };
-  }
-}
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
 
-/**
- * 取得或建立工作表
- */
-function getOrCreateSheet() {
-  try {
-    let spreadsheet;
-    
-    // 嘗試開啟現有試算表
-    try {
-      spreadsheet = SpreadsheetApp.openById(SHEET_ID);
-    } catch (error) {
-      // 如果試算表不存在，建立新的
-      spreadsheet = SpreadsheetApp.create('AA01照顧計畫資料庫');
-      console.log('已建立新試算表，ID:', spreadsheet.getId());
-      console.log('請將此ID更新到 SHEET_ID 變數中');
-    }
-    
-    // 取得或建立工作表
-    let sheet = spreadsheet.getSheetByName(SHEET_NAME);
-    
-    if (!sheet) {
-      sheet = spreadsheet.insertSheet(SHEET_NAME);
-      setupHeaders(sheet);
-    }
-    
-    return sheet;
-    
-  } catch (error) {
-    console.error('取得工作表失敗:', error);
-    throw error;
-  }
-}
+        /* 簡單登入區塊 */
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
 
-/**
- * 設定表格標題
- */
-function setupHeaders(sheet) {
-  const headers = [
-    '時間戳記', '用戶姓名', '家訪日期', '出院日期', '偕同訪視者',
-    '身心概況', '經濟收入', '居住環境', '社會支持', '其他', '複評評值',
-    '上次計畫目標', '本次問題清單', '不一致原因說明', 
-    'B碼服務', 'C碼服務', 'D碼服務', 'EF碼服務', 'G碼服務', 'SC碼', 
-    '營養餐飲服務', '緊急救援服務', '轉介其他服務資源', '個案管理員', '其他備註',
-    'B碼原始資料', 'D碼原始資料', 'EF碼原始資料'
-  ];
-  
-  // 設定標題行
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-  
-  // 格式化標題行
-  const headerRange = sheet.getRange(1, 1, 1, headers.length);
-  headerRange.setBackground('#4285f4');
-  headerRange.setFontColor('#ffffff');
-  headerRange.setFontWeight('bold');
-  headerRange.setHorizontalAlignment('center');
-  
-  // 凍結標題行
-  sheet.setFrozenRows(1);
-  
-  // 自動調整欄寬
-  sheet.autoResizeColumns(1, headers.length);
-  
-  console.log('表格標題已設定');
-}
+        .login-container h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
 
-/**
- * 尋找現有的資料行
- */
-function findExistingRow(sheet, userName, visitDate) {
-  try {
-    const data = sheet.getDataRange().getValues();
-    
-    if (data.length <= 1) return 0; // 只有標題行
-    
-    // 尋找相同用戶和相同家訪日期的資料
-    for (let i = 1; i < data.length; i++) {
-      const rowUserName = data[i][1]; // 用戶姓名在第2欄
-      const rowVisitDate = data[i][2]; // 家訪日期在第3欄
-      
-      if (rowUserName === userName && rowVisitDate === visitDate) {
-        return i + 1; // 回傳行號（從1開始）
-      }
-    }
-    
-    return 0; // 沒找到
-    
-  } catch (error) {
-    console.error('尋找現有資料失敗:', error);
-    return 0;
-  }
-}
+        .login-form {
+            text-align: left;
+        }
 
-/**
- * 建立回應
- */
-function createResponse(data) {
-  return ContentService
-    .createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+        .login-form input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
 
-// ========== 測試和維護函式 ==========
+        .login-form input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
 
-/**
- * 測試函式
- */
-function testFunction() {
-  console.log('開始測試...');
-  
-  // 測試工作表建立
-  try {
-    const sheet = getOrCreateSheet();
-    console.log('✓ 工作表測試成功');
-    console.log('工作表名稱:', sheet.getName());
-    console.log('工作表ID:', sheet.getParent().getId());
-  } catch (error) {
-    console.log('✗ 工作表測試失敗:', error);
-  }
-  
-  // 測試資料儲存
-  const testData = {
-    userName: '測試用戶',
-    visitDate: '2025-01-20',
-    caseManager: '測試管理員',
-    physicalMental: '測試身心概況資料',
-    bCodeNotes: 'BA01 × 5次、BA02',
-    dCodeNotes: '世豪小客車租賃有限公司、福倫交通股份有限公司',
-    efCodeNotes: 'EA01-1[馬桶增高器]、EB01[單支枴杖-不鏽鋼製]'
-  };
-  
-  try {
-    const result = saveToSheet(testData);
-    console.log('✓ 資料儲存測試:', result);
-  } catch (error) {
-    console.log('✗ 資料儲存測試失敗:', error);
-  }
-  
-  console.log('測試完成！');
-}
+        .user-info {
+            background: rgba(40, 167, 69, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
 
-/**
- * 取得統計資訊
- */
-function getStatistics() {
-  try {
-    const sheet = getOrCreateSheet();
-    const data = sheet.getDataRange().getValues();
-    
-    if (data.length <= 1) {
-      return { totalRecords: 0, message: '沒有資料' };
-    }
-    
-    const totalRecords = data.length - 1; // 扣除標題行
-    const uniqueUsers = new Set();
-    const today = new Date().toDateString();
-    let todayRecords = 0;
-    
-    for (let i = 1; i < data.length; i++) {
-      const userName = data[i][1];
-      const recordDate = new Date(data[i][0]).toDateString();
-      
-      uniqueUsers.add(userName);
-      
-      if (recordDate === today) {
-        todayRecords++;
-      }
-    }
-    
-    const stats = {
-      totalRecords: totalRecords,
-      uniqueUsers: uniqueUsers.size,
-      todayRecords: todayRecords,
-      lastUpdate: data[data.length - 1][0] // 最後一筆記錄的時間
-    };
-    
-    console.log('統計資訊:', stats);
-    return stats;
-    
-  } catch (error) {
-    console.error('取得統計資訊失敗:', error);
-    return { error: error.toString() };
-  }
-}
+        .form-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: none;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h2::before {
+            content: "📝";
+            font-size: 1.2em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 20px;
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .form-row.single {
+            grid-template-columns: 1fr;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        input[type="text"], 
+        input[type="date"], 
+        textarea, 
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        input[type="text"]:focus, 
+        input[type="date"]:focus, 
+        textarea:focus, 
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .subsection {
+            margin-left: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .subsection h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .service-item {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #28a745;
+        }
+
+        .bcode-item, .code-item {
+            display: flex; 
+            align-items: center; 
+            background: rgba(255,255,255,0.6); 
+            padding: 8px; 
+            border-radius: 5px; 
+            margin: 2px 0;
+        }
+
+        .bcode-item input[type="number"] {
+            width: 60px; 
+            margin-left: 10px; 
+            padding: 5px; 
+            border: 1px solid #ccc; 
+            border-radius: 5px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, #ffc107, #fd7e14);
+            color: #212529;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .required {
+            color: #dc3545;
+        }
+
+        .note {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .sync-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 1000;
+            display: none;
+        }
+
+        .sync-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .sync-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .sync-status.syncing {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr !important;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .form-container {
+                padding: 20px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .container {
+                max-width: 100%;
+                padding: 0;
+                margin: 0;
+            }
+            .header, .login-container, .user-info, .button-group {
+                display: none !important;
+            }
+            .form-container, .section, .subsection, .service-item {
+                background: white !important;
+                box-shadow: none !important;
+                border: none !important;
+                padding: 10px !important;
+                margin-bottom: 20px;
+            }
+            .form-container {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AA01 照顧計畫擬訂與服務連結系統</h1>
+            <p>桃園市政府衛生局長期照護科 - 數位化管理系統</p>
+        </div>
+
+        <!-- 簡單登入區塊 -->
+        <div class="login-container" id="loginContainer">
+            <h2>系統登入</h2>
+            <p style="margin-bottom: 20px;">請輸入姓名和密碼</p>
+            <div class="login-form">
+                <input type="text" id="userName" placeholder="請輸入您的姓名" required>
+                <input type="password" id="userPassword" placeholder="請輸入密碼" required>
+                <button class="btn btn-primary" onclick="login()" style="width: 100%;">登入系統</button>
+            </div>
+        </div>
+
+        <!-- 使用者資訊 -->
+        <div class="user-info" id="userInfo" style="display: none;">
+            <div>
+                <strong>已登入：</strong><span id="displayUserName"></span>
+            </div>
+            <button class="btn btn-secondary" onclick="logout()">登出</button>
+        </div>
+
+        <div class="form-container" id="formContainer">
+            <form id="aa01Form">
+                <!-- 基本資訊 -->
+                <div class="section">
+                    <h2>基本資訊</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="visitDate">家訪日期 <span class="required">*</span></label>
+                            <input type="date" id="visitDate" name="visitDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="dischargeDate">出院日期 (非經出準評估個案免填)</label>
+                            <input type="date" id="dischargeDate" name="dischargeDate">
+                        </div>
+                    </div>
+                    <div class="form-row single">
+                        <div class="form-group">
+                            <label for="visitWith">偕同訪視者</label>
+                            <input type="text" id="visitWith" name="visitWith" placeholder="包含個案、家屬、其他單位人員等當日在場者">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 個案概況 -->
+                <div class="section">
+                    <h2>個案概況</h2>
+                    
+                    <div class="subsection">
+                        <h3>(一) 身心概況</h3>
+                        <textarea name="physicalMental" placeholder="如個案意識、身體功能、身障類別/等級、疾病史、就醫與用藥情形等"></textarea>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>(二) 經濟收入</h3>
+                        <textarea name="economicIncome" placeholder="如收入、經濟來源、福利補助、身障等級、低收入等身分別等"></textarea>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>(三) 居住環境</h3>
+                        <textarea name="livingEnvironment" placeholder="如居住型態、環境整潔度、輔具或無障礙現況等"></textarea>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>(四) 社會支持</h3>
+                        <textarea name="socialSupport" placeholder="如家庭支持度(主照者、主要聯繫人、決策者或其他家屬支持、正式或非正式資源等(鄰里關係、社區資源等，含高風險評估)"></textarea>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>(五) 其他</h3>
+                        <textarea name="others" placeholder="如個案成長背景、職業、生活習慣、價值觀等"></textarea>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>(六) 複評評值</h3>
+                        <textarea name="reevaluation" placeholder="執行複評或AA01時於此撰寫個案服務的運用情形、介入後及改善後的現況及是否需調整照顧目標等，新案則免填"></textarea>
+                    </div>
+                </div>
+
+                <!-- 照顧目標 -->
+                <div class="section">
+                    <h2>照顧目標</h2>
+                    <div class="note">
+                        目標請與問題清單、服務項目、資源現況與問題現況相契合，也可擬定短中長期目標，目標需明確且有利於個管員進行追蹤時，可評值目標達成情形
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="previousGoals">上次計畫目標達成情形及未設目標問題追蹤</label>
+                        <textarea id="previousGoals" name="previousGoals" placeholder="例：上次問題清單:1.處理家務問題 2.走路問題 3.購物及外出問題 4.安全疑慮 5.移位問題"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="currentGoals">本次問題清單及目標設定</label>
+                        <textarea id="currentGoals" name="currentGoals" placeholder="例：本次問題清單:1.處理家務問題 2.購物及外出問題 3.洗澡問題 4.安全疑慮 5.移位問題"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inconsistencyReason">與照專建議服務項目、問題清單不一致原因說明及未來規劃、後續追蹤計劃等</label>
+                        <textarea id="inconsistencyReason" name="inconsistencyReason" placeholder="例：1.目標達成的狀況以及未達成的差距 2.資源的變動情形 3.未使用的替代方案或是可能的影響"></textarea>
+                    </div>
+                </div>
+
+                <!-- 計畫執行規劃 -->
+                <div class="section">
+                    <h2>計畫執行規劃</h2>
+                    
+                    <div class="subsection">
+                        <h3>長照服務核定項目、頻率</h3>
+                        
+                        <!-- B碼服務 -->
+                        <div class="service-item">
+                            <label>B碼服務 (輪派/指定單位)</label>
+                            <div id="bCodeContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 15px 0; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
+                                <!-- B碼選項會在這裡動態生成 -->
+                            </div>
+                            <textarea name="bCodeNotes" placeholder="B碼服務備註" style="margin-top: 10px;"></textarea>
+                        </div>
+
+                        <!-- C碼服務 -->
+                        <div class="service-item">
+                            <label>C碼服務 (輪派/指定單位)</label>
+                            <textarea name="cCode" placeholder="服務代碼+個案及家屬最希望改善之日常生活活動項目..."></textarea>
+                        </div>
+
+                        <!-- D碼服務 -->
+                        <div class="service-item">
+                            <label>D碼服務</label>
+                            <div id="dCodeContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px; margin: 15px 0;">
+                                <!-- D碼選項會在這裡動態生成 -->
+                            </div>
+                            <textarea name="dCodeNotes" placeholder="D碼服務備註" style="margin-top: 10px;"></textarea>
+                        </div>
+
+                        <!-- EF碼服務 -->
+                        <div class="service-item">
+                            <label>E.F碼服務</label>
+                            <div id="efCodeContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 8px; margin: 15px 0; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
+                                <!-- EF碼選項會在這裡動態生成 -->
+                            </div>
+                            <textarea name="efCodeNotes" placeholder="E.F碼服務備註" style="margin-top: 10px;"></textarea>
+                        </div>
+
+                        <!-- G碼服務 -->
+                        <div class="service-item">
+                            <label>G碼服務</label>
+                            <textarea name="gCode" placeholder="代碼+名稱"></textarea>
+                        </div>
+
+                        <!-- SC碼服務 -->
+                        <div class="service-item">
+                            <label>SC碼 (如有比例問題請敘明)</label>
+                            <textarea name="scCode" placeholder="SC碼相關說明"></textarea>
+                        </div>
+
+                        <!-- 營養餐飲服務 -->
+                        <div class="service-item">
+                            <label>營養餐飲服務</label>
+                            <textarea name="mealService" placeholder="1日核定○○餐（午／晚餐）"></textarea>
+                        </div>
+
+                        <!-- 緊急救援服務 -->
+                        <div class="service-item">
+                            <label>緊急救援服務</label>
+                            <textarea name="emergencyService" placeholder="緊急救援服務說明"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>轉介其他服務資源</h3>
+                        <textarea name="referralServices" placeholder="如:家照、華山基金會、慈濟資源站、高風險通報、身障資源、獨老關懷、家防中心等其他資源，敘述連結狀況或提供的內容等"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="caseManager">個案管理員 <span class="required">*</span></label>
+                        <input type="text" id="caseManager" name="caseManager" placeholder="如為代理人，請敘明原因" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="additionalNotes">其他備註</label>
+                        <textarea id="additionalNotes" name="additionalNotes" placeholder="個案特殊狀況或其他未盡事宜"></textarea>
+                    </div>
+                </div>
+
+                <!-- 按鈕區 -->
+                <div class="button-group">
+                    <button type="button" class="btn btn-warning" onclick="clearForm()">
+                        🗑️ 清除資料
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="exportPDF()">
+                        📄 匯出PDF
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 同步狀態顯示 -->
+        <div class="sync-status" id="syncStatus"></div>
+    </div>
+
+    <script>
+        // ========== 設定區域 ==========
+        const GOOGLE_APPS_SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE'; // 請替換為您的 Google Apps Script URL
+        const SYSTEM_PASSWORD = 'corn783ivy056'; // 請更改為您想要的密碼
+        
+        // 全域變數
+        let currentUser = null;
+        let isLoggedIn = false;
+
+        // B碼選項資料
+        const bCodeOptions = [
+            'BA01', 'BA02', 'BA03', 'BA04', 'BA05-1', 'BA05-2', 'BA07', 'BA08', 'BA09', 'BA09a',
+            'BA10', 'BA11', 'BA12', 'BA13', 'BA14', 'BA15-1', 'BA15-2', 'BA16-1', 'BA16-2',
+            'BA17a', 'BA17b', 'BA17c', 'BA17d1', 'BA17d2', 'BA17e', 'BA18', 'BA20', 'BA22', 'BA23', 'BA24',
+            'BB01', 'BB02', 'BB03', 'BB04', 'BB05', 'BB06', 'BB07', 'BB08', 'BB09', 'BB10',
+            'BB11', 'BB12', 'BB13', 'BB14',
+            'BC01', 'BC02', 'BC03', 'BC04', 'BC05', 'BC06', 'BC07', 'BC08', 'BC09', 'BC10',
+            'BC11', 'BC12', 'BC13', 'BC14',
+            'BD01', 'BD02', 'BD03'
+        ];
+
+        // D碼選項資料
+        const dCodeOptions = [
+            '世豪小客車租賃有限公司',
+            '福倫交通股份有限公司',
+            '康健小客車租賃有限公司',
+            '尚倫國際租車有限公司',
+            '新航國際租賃有限公司',
+            '社團法人臺中市綠生活創意行動協會',
+            '台灣福祉車租賃有限公司',
+            '北台灣無障礙運輸產業工會',
+            '清山交通有限公司',
+            '金旺租賃有限公司',
+            '佳禾通業股份有限公司'
+        ];
+
+        // EF碼選項資料
+        const efCodeOptions = [
+            'EA01-1[馬桶增高器]',
+            'EA01-2[便盆椅]',
+            'EA01-3[沐浴椅]',
+            'EB01[單支枴杖-不鏽鋼製]',
+            'EB02[單支拐杖-鋁製]',
+            'EB03[助行器]',
+            'EB04[帶輪型助步車(助行椅)]',
+            'EC01[輪椅-A款(非輕量化量產型)]',
+            'EC02[輪椅-B款(輕量化量產型)]',
+            'EC03[輪椅-C款(量身訂製型)]',
+            'EC04[輪椅附加功能-A款]',
+            'EC05[輪椅附加功能-B款]',
+            'EC06[輪椅附加功能-C款]',
+            'ED01[移位腰帶]',
+            'EG01[氣墊床-A款]',
+            'EG02[氣墊床-B款]',
+            'EG03[輪椅坐墊-A款(連通管型氣囊氣墊座-塑膠材質)]',
+            'EG04[輪椅坐墊-B款(連通管型氣囊氣墊座-橡膠材質)]',
+            'EG05[輪椅坐墊-C款(液態凝膠坐墊)]',
+            'EG06[輪椅坐墊-D款(固態凝膠坐墊)]',
+            'EH01[居家用照顧床]',
+            'EH02[居家用照顧床-附加功能A款(床面升降功能)]',
+            'EH03[居家用照顧床-附加功能B款(電動升降功能)]',
+            'FA01[居家無障礙設施-扶手(每10公分)]'
+        ];
+
+        // ========== 登入相關功能 ==========
+        
+        // 簡單登入
+        function login() {
+            const userName = document.getElementById('userName').value.trim();
+            const password = document.getElementById('userPassword').value;
+            
+            if (!userName) {
+                alert('請輸入姓名');
+                return;
+            }
+            
+            if (password !== SYSTEM_PASSWORD) {
+                alert('密碼錯誤');
+                return;
+            }
+            
+            currentUser = userName;
+            isLoggedIn = true;
+            
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('userInfo').style.display = 'flex';
+            document.getElementById('formContainer').style.display = 'block';
+            document.getElementById('displayUserName').textContent = userName;
+            
+            showSyncStatus('登入成功！', 'success');
+            initializeForm();
+        }
+
+        // 登出
+        function logout() {
+            isLoggedIn = false;
+            currentUser = null;
+            
+            document.getElementById('loginContainer').style.display = 'block';
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('formContainer').style.display = 'none';
+            
+            document.getElementById('userName').value = '';
+            document.getElementById('userPassword').value = '';
+            
+            showSyncStatus('已登出', 'success');
+        }
+
+        // ========== 表單相關功能 ==========
+
+        // 初始化表單
+        function initializeForm() {
+            generateCodeOptions('bCodeContainer', bCodeOptions, 'bcode');
+            generateCodeOptions('dCodeContainer', dCodeOptions, 'dcode');
+            generateCodeOptions('efCodeContainer', efCodeOptions, 'efcode');
+            
+            // 監聽表單變化，自動同步
+            const form = document.getElementById('aa01Form');
+            const inputs = form.querySelectorAll('input, textarea, select');
+            
+            inputs.forEach(input => {
+                input.addEventListener('change', debounce(autoSync, 2000));
+                input.addEventListener('input', debounce(autoSync, 2000));
+            });
+        }
+
+        // 生成選項
+        function generateCodeOptions(containerId, options, type) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            if (type === 'bcode') {
+                container.innerHTML = options.map(option => `
+                    <div class="bcode-item">
+                        <input type="checkbox" value="${option}" onchange="autoSync()">
+                        <label style="margin-bottom: 0; font-weight: normal; flex: 1;">${option}</label>
+                        <input type="number" data-code="${option}" min="0" placeholder="次數" onchange="autoSync()">
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = options.map(option => `
+                    <div class="code-item">
+                        <input type="checkbox" value="${option}" onchange="autoSync()">
+                        <label style="margin-bottom: 0; font-weight: normal; flex: 1;">${option}</label>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // 收集表單資料
+        function collectFormData() {
+            const formData = new FormData(document.getElementById('aa01Form'));
+            const data = Object.fromEntries(formData.entries());
+            
+            // 收集B碼資料
+            const bCodeData = {};
+            document.querySelectorAll('#bCodeContainer .bcode-item').forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                const countInput = item.querySelector('input[type="number"]');
+                const code = checkbox.value;
+                const count = parseInt(countInput.value) || 0;
+                
+                bCodeData[code] = {
+                    selected: checkbox.checked,
+                    count: count
+                };
+            });
+            data.bCodeData = JSON.stringify(bCodeData);
+            
+            // 收集其他選項
+            data.selectedDCodes = Array.from(document.querySelectorAll('#dCodeContainer input[type="checkbox"]:checked')).map(cb => cb.value).join('、');
+            data.selectedEFCodes = Array.from(document.querySelectorAll('#efCodeContainer input[type="checkbox"]:checked')).map(cb => cb.value).join('、');
+            
+            // 添加時間戳記和使用者資訊
+            data.lastUpdated = new Date().toISOString();
+            data.userName = currentUser;
+            
+            return data;
+        }
+
+        // 自動同步到 Google Sheets
+        async function autoSync() {
+            if (!isLoggedIn || !GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                return; // 如果沒有設定 Apps Script URL，就不同步
+            }
+            
+            try {
+                showSyncStatus('同步中...', 'syncing');
+                const data = collectFormData();
+                
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'save',
+                        data: data
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSyncStatus('資料已同步', 'success');
+                } else {
+                    throw new Error(result.error || '同步失敗');
+                }
+                
+            } catch (error) {
+                console.error('同步失敗:', error);
+                showSyncStatus('同步失敗', 'error');
+            }
+        }
+
+        // 清除表單資料
+        function clearForm() {
+            if (confirm('確定要清除所有資料嗎？此操作無法復原。')) {
+                document.getElementById('aa01Form').reset();
+                
+                // 清除所有勾選框
+                document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                document.querySelectorAll('input[type="number"]').forEach(input => input.value = '');
+                
+                showSyncStatus('資料已清除', 'success');
+                autoSync(); // 同步空白表單
+            }
+        }
+
+        // 匯出PDF
+        function exportPDF() {
+            showSyncStatus('準備匯出PDF...', 'syncing');
+            setTimeout(() => {
+                window.print();
+                showSyncStatus('PDF匯出完成', 'success');
+            }, 1000);
+        }
+
+        // 顯示同步狀態
+        function showSyncStatus(message, type) {
+            const statusDiv = document.getElementById('syncStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `sync-status ${type}`;
+            statusDiv.style.display = 'block';
+            
+            if (type !== 'syncing') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // 防抖函式
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 頁面載入完成後初始化
+        window.onload = function() {
+            console.log('AA01系統已載入');
+            
+            // 支援 Enter 鍵登入
+            document.getElementById('userPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    login();
+                }
+            });
+        };
+    </script>
+</body>
+</html>
