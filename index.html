@@ -605,8 +605,8 @@
 
     <script>
         // ========== 設定區域 ==========
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyCFzZWd8GfuDFXFWaaAP_r2sX4o1M2A5AasrkvhZLVzvuddSDigc1qFXo3gw59sRPP/exec'; // 請替換為您的 Google Apps Script URL
-        const SYSTEM_PASSWORD = 'corn783ivy056'; // 請更改為您想要的密碼
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbysxlykbr51E8ShXuSaVaQF3GLuIC0co51UCyydnxLoOToEWfDWtckco5y_BoFS8PtbUg/exec'; // 請替換為您的 Google Apps Script URL
+        const SYSTEM_PASSWORD = 'corn783ivy056'; // 用戶的實際密碼
         
         // 全域變數
         let currentUser = null;
@@ -671,32 +671,50 @@
         
         // 簡單登入
         function login() {
-            const userName = document.getElementById('userName').value.trim();
-            const password = document.getElementById('userPassword').value;
-            
-            if (!userName) {
-                alert('請輸入姓名');
-                return;
+            try {
+                console.log('開始登入流程...');
+                
+                const userName = document.getElementById('userName').value.trim();
+                const password = document.getElementById('userPassword').value;
+                
+                console.log('輸入的用戶名:', userName);
+                console.log('輸入的密碼長度:', password.length);
+                console.log('系統設定的密碼:', SYSTEM_PASSWORD);
+                console.log('密碼比對結果:', password === SYSTEM_PASSWORD);
+                
+                if (!userName) {
+                    alert('請輸入姓名');
+                    return;
+                }
+                
+                if (password !== SYSTEM_PASSWORD) {
+                    console.error('密碼錯誤！輸入:', password, '應該是:', SYSTEM_PASSWORD);
+                    alert('密碼錯誤');
+                    return;
+                }
+                
+                console.log('登入驗證通過');
+                
+                currentUser = userName;
+                isLoggedIn = true;
+                
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('userInfo').style.display = 'flex';
+                document.getElementById('formContainer').style.display = 'block';
+                document.getElementById('displayUserName').textContent = userName;
+                
+                showSyncStatus('登入成功！', 'success');
+                initializeForm();
+                
+                // 啟動30秒自動同步計時器
+                startAutoSyncTimer();
+                
+                console.log('登入完成');
+                
+            } catch (error) {
+                console.error('登入過程發生錯誤:', error);
+                alert('登入發生錯誤，請查看開發者工具');
             }
-            
-            if (password !== SYSTEM_PASSWORD) {
-                alert('密碼錯誤');
-                return;
-            }
-            
-            currentUser = userName;
-            isLoggedIn = true;
-            
-            document.getElementById('loginContainer').style.display = 'none';
-            document.getElementById('userInfo').style.display = 'flex';
-            document.getElementById('formContainer').style.display = 'block';
-            document.getElementById('displayUserName').textContent = userName;
-            
-            showSyncStatus('登入成功！', 'success');
-            initializeForm();
-            
-            // 啟動30秒自動同步計時器
-            startAutoSyncTimer();
         }
 
         // 登出
@@ -902,7 +920,7 @@
             return data;
         }
 
-        // 自動同步到 Google Sheets
+        // 自動同步到 Google Sheets（改良版）
         async function autoSync() {
             if (!isLoggedIn) {
                 console.log('未登入，跳過自動同步');
@@ -917,10 +935,14 @@
             try {
                 console.log('開始自動同步...');
                 showSyncStatus('同步中...', 'syncing');
-                const data = collectFormData();
                 
+                const data = collectFormData();
+                console.log('收集到的資料:', data);
+                
+                // 使用修改過的請求方式
                 const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
                     method: 'POST',
+                    mode: 'cors',
                     headers: {
                         'Content-Type': 'application/json',
                     },
@@ -930,14 +952,18 @@
                     })
                 });
 
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
                 const result = await response.json();
+                console.log('同步結果:', result);
                 
                 if (result.success) {
-                    showSyncStatus('資料已同步到Google表單', 'success');
+                    showSyncStatus('資料已同步到Google表單 ✓', 'success');
                     console.log('自動同步成功');
                 } else {
                     throw new Error(result.error || '同步失敗');
@@ -945,11 +971,19 @@
                 
             } catch (error) {
                 console.error('自動同步失敗:', error);
-                showSyncStatus('Google表單同步失敗', 'error');
+                
+                // 詳細的錯誤處理
+                if (error.name === 'TypeError' && error.message.includes('CORS')) {
+                    showSyncStatus('CORS錯誤：請檢查Apps Script設定', 'error');
+                } else if (error.message.includes('Failed to fetch')) {
+                    showSyncStatus('網路錯誤：請檢查連線', 'error');
+                } else {
+                    showSyncStatus(`同步失敗: ${error.message}`, 'error');
+                }
             }
         }
 
-        // 手動同步功能
+        // 手動同步功能（改良版）
         async function manualSync() {
             if (!isLoggedIn) {
                 alert('請先登入系統');
@@ -957,12 +991,77 @@
             }
             
             if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-                alert('請先設定Google Apps Script URL');
+                alert('請先設定Google Apps Script URL\n\n請在 GitHub 的 index.html 檔案中\n找到 GOOGLE_APPS_SCRIPT_URL 並更新為您的實際URL');
                 return;
             }
             
             console.log('手動同步開始...');
-            await autoSync();
+            console.log('使用 URL:', GOOGLE_APPS_SCRIPT_URL);
+            
+            // 先測試連線
+            try {
+                showSyncStatus('測試連線中...', 'syncing');
+                
+                const testResponse = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'test'
+                    })
+                });
+                
+                if (testResponse.ok) {
+                    const testResult = await testResponse.json();
+                    console.log('連線測試成功:', testResult);
+                    
+                    // 連線成功後進行實際同步
+                    await autoSync();
+                } else {
+                    throw new Error(`連線測試失敗: ${testResponse.status}`);
+                }
+                
+            } catch (error) {
+                console.error('手動同步失敗:', error);
+                showSyncStatus('同步失敗，請查看Console', 'error');
+                
+                // 提供詳細的錯誤說明
+                alert(`同步失敗！\n\n錯誤：${error.message}\n\n請檢查：\n1. Google Apps Script URL 是否正確\n2. Apps Script 部署權限是否設為「任何人」\n3. 瀏覽器Console的詳細錯誤訊息`);
+            }
+        }
+
+        // 測試連線功能
+        async function testGoogleConnection() {
+            if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                alert('請先設定 Google Apps Script URL');
+                return;
+            }
+            
+            try {
+                console.log('測試 Google Apps Script 連線...');
+                console.log('URL:', GOOGLE_APPS_SCRIPT_URL);
+                
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                console.log('測試回應狀態:', response.status);
+                const data = await response.json();
+                console.log('測試回應資料:', data);
+                
+                if (data.success) {
+                    alert('Google Apps Script 連線成功！\n\n' + data.message);
+                } else {
+                    alert('連線失敗：' + (data.error || '未知錯誤'));
+                }
+                
+            } catch (error) {
+                console.error('連線測試錯誤:', error);
+                alert('連線測試失敗：\n\n' + error.message + '\n\n請檢查Console獲取詳細資訊');
+            }
         }
 
         // 30秒自動同步計時器
