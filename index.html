@@ -667,74 +667,78 @@
             'FA01[居家無障礙設施-扶手(每10公分)]'
         ];
 
-        // ========== 登入相關功能 ==========
+       // ========== 登入相關功能修正版 ==========
+
+// 簡單登入函數 - 替換HTML中原有的login函數
+function login() {
+    try {
+        console.log('開始登入流程...');
         
-        // 簡單登入
-        function login() {
-            try {
-                console.log('開始登入流程...');
-                
-                const userName = document.getElementById('userName').value.trim();
-                const password = document.getElementById('userPassword').value;
-                
-                console.log('輸入的用戶名:', userName);
-                console.log('輸入的密碼長度:', password.length);
-                console.log('系統設定的密碼:', SYSTEM_PASSWORD);
-                console.log('密碼比對結果:', password === SYSTEM_PASSWORD);
-                
-                if (!userName) {
-                    alert('請輸入姓名');
-                    return;
-                }
-                
-                if (password !== SYSTEM_PASSWORD) {
-                    console.error('密碼錯誤！輸入:', password, '應該是:', SYSTEM_PASSWORD);
-                    alert('密碼錯誤');
-                    return;
-                }
-                
-                console.log('登入驗證通過');
-                
-                currentUser = userName;
-                isLoggedIn = true;
-                
-                document.getElementById('loginContainer').style.display = 'none';
-                document.getElementById('userInfo').style.display = 'flex';
-                document.getElementById('formContainer').style.display = 'block';
-                document.getElementById('displayUserName').textContent = userName;
-                
-                showSyncStatus('登入成功！', 'success');
-                initializeForm();
-                
-                // 啟動30秒自動同步計時器
-                startAutoSyncTimer();
-                
-                console.log('登入完成');
-                
-            } catch (error) {
-                console.error('登入過程發生錯誤:', error);
-                alert('登入發生錯誤，請查看開發者工具');
-            }
+        const userName = document.getElementById('userName').value.trim();
+        const password = document.getElementById('userPassword').value;
+        
+        console.log('輸入的用戶名:', userName);
+        console.log('輸入的密碼長度:', password.length);
+        console.log('系統設定的密碼:', SYSTEM_PASSWORD);
+        console.log('密碼比對結果:', password === SYSTEM_PASSWORD);
+        
+        if (!userName) {
+            alert('請輸入姓名');
+            return;
         }
-
-        // 登出
-        function logout() {
-            isLoggedIn = false;
-            currentUser = null;
-            
-            // 停止自動同步計時器
-            stopAutoSyncTimer();
-            
-            document.getElementById('loginContainer').style.display = 'block';
-            document.getElementById('userInfo').style.display = 'none';
-            document.getElementById('formContainer').style.display = 'none';
-            
-            document.getElementById('userName').value = '';
-            document.getElementById('userPassword').value = '';
-            
-            showSyncStatus('已登出', 'success');
+        
+        if (password !== SYSTEM_PASSWORD) {
+            console.error('密碼錯誤！輸入:', password, '應該是:', SYSTEM_PASSWORD);
+            alert('密碼錯誤');
+            return;
         }
+        
+        console.log('登入驗證通過');
+        
+        // 設定全域變數
+        currentUser = userName;
+        isLoggedIn = true;
+        
+        // 更新UI
+        document.getElementById('loginContainer').style.display = 'none';
+        document.getElementById('userInfo').style.display = 'flex';
+        document.getElementById('formContainer').style.display = 'block';
+        document.getElementById('displayUserName').textContent = userName;
+        
+        showSyncStatus('登入成功！', 'success');
+        
+        // 初始化表單
+        initializeForm();
+        
+        // 啟動30秒自動同步計時器
+        startAutoSyncTimer();
+        
+        console.log('登入完成');
+        
+    } catch (error) {
+        console.error('登入過程發生錯誤:', error);
+        alert('登入發生錯誤，請查看開發者工具');
+    }
+}
 
+// 登出函數 - 同樣需要確保正確定義
+function logout() {
+    isLoggedIn = false;
+    currentUser = null;
+    
+    // 停止自動同步計時器
+    stopAutoSyncTimer();
+    
+    document.getElementById('loginContainer').style.display = 'block';
+    document.getElementById('userInfo').style.display = 'none';
+    document.getElementById('formContainer').style.display = 'none';
+    
+    document.getElementById('userName').value = '';
+    document.getElementById('userPassword').value = '';
+    
+    showSyncStatus('已登出', 'success');
+}
+        
         // ========== 表單相關功能 ==========
 
         // 初始化表單
@@ -1028,7 +1032,6 @@
                 // 提供詳細的錯誤說明
                 alert(`同步失敗！\n\n錯誤：${error.message}\n\n請檢查：\n1. Google Apps Script URL 是否正確\n2. Apps Script 部署權限是否設為「任何人」\n3. 瀏覽器Console的詳細錯誤訊息`);
             }
-        }
 
        // 修正版測試連線函數
 async function testGoogleConnection() {
