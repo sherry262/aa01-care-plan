@@ -944,7 +944,7 @@
                     method: 'POST',
                     mode: 'cors',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'text/plain;charset=utf-8',  // 關鍵修改
                     },
                     body: JSON.stringify({
                         action: 'save',
@@ -953,7 +953,6 @@
                 });
 
                 console.log('Response status:', response.status);
-                console.log('Response headers:', [...response.headers.entries()]);
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -973,10 +972,8 @@
                 console.error('自動同步失敗:', error);
                 
                 // 詳細的錯誤處理
-                if (error.name === 'TypeError' && error.message.includes('CORS')) {
-                    showSyncStatus('CORS錯誤：請檢查Apps Script設定', 'error');
-                } else if (error.message.includes('Failed to fetch')) {
-                    showSyncStatus('網路錯誤：請檢查連線', 'error');
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    showSyncStatus('網路錯誤：請檢查Apps Script設定', 'error');
                 } else {
                     showSyncStatus(`同步失敗: ${error.message}`, 'error');
                 }
@@ -991,7 +988,7 @@
             }
             
             if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-                alert('請先設定Google Apps Script URL\n\n請在 GitHub 的 index.html 檔案中\n找到 GOOGLE_APPS_SCRIPT_URL 並更新為您的實際URL');
+                alert('請先設定Google Apps Script URL');
                 return;
             }
             
@@ -1006,7 +1003,7 @@
                     method: 'POST',
                     mode: 'cors',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type':  'text/plain;charset=utf-8',  // 關鍵修改
                     },
                     body: JSON.stringify({
                         action: 'test'
@@ -1026,43 +1023,45 @@
             } catch (error) {
                 console.error('手動同步失敗:', error);
                 showSyncStatus('同步失敗，請查看Console', 'error');
-                
+                 alert(`同步失敗！\n\n錯誤：${error.message}\n\n請檢查Apps Script部署設定`);
+    }
                 // 提供詳細的錯誤說明
                 alert(`同步失敗！\n\n錯誤：${error.message}\n\n請檢查：\n1. Google Apps Script URL 是否正確\n2. Apps Script 部署權限是否設為「任何人」\n3. 瀏覽器Console的詳細錯誤訊息`);
             }
         }
 
-        // 測試連線功能
-        async function testGoogleConnection() {
-            if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-                alert('請先設定 Google Apps Script URL');
-                return;
-            }
-            
-            try {
-                console.log('測試 Google Apps Script 連線...');
-                console.log('URL:', GOOGLE_APPS_SCRIPT_URL);
-                
-                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-                
-                console.log('測試回應狀態:', response.status);
-                const data = await response.json();
-                console.log('測試回應資料:', data);
-                
-                if (data.success) {
-                    alert('Google Apps Script 連線成功！\n\n' + data.message);
-                } else {
-                    alert('連線失敗：' + (data.error || '未知錯誤'));
-                }
-                
-            } catch (error) {
-                console.error('連線測試錯誤:', error);
-                alert('連線測試失敗：\n\n' + error.message + '\n\n請檢查Console獲取詳細資訊');
-            }
+       // 修正版測試連線函數
+async function testGoogleConnection() {
+    if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+        alert('請先設定 Google Apps Script URL');
+        return;
+    }
+    
+    try {
+        console.log('測試 Google Apps Script 連線...');
+        console.log('URL:', GOOGLE_APPS_SCRIPT_URL);
+        
+        // 🚀 使用GET方法測試（避免CORS問題）
+        const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+            method: 'GET',
+            mode: 'cors'
+        });
+        
+        console.log('測試回應狀態:', response.status);
+        const data = await response.json();
+        console.log('測試回應資料:', data);
+        
+        if (data.success) {
+            alert('Google Apps Script 連線成功！\n\n' + data.message);
+        } else {
+            alert('連線失敗：' + (data.error || '未知錯誤'));
         }
+        
+    } catch (error) {
+        console.error('連線測試錯誤:', error);
+        alert('連線測試失敗：\n\n' + error.message + '\n\n請檢查Apps Script部署設定');
+    }
+}
 
         // 30秒自動同步計時器
         let autoSyncTimer = null;
