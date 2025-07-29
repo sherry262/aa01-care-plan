@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AA01照顧計畫擬訂與服務連結系統</title>
     
-    <!-- Google API -->
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client"></script>
-    
     <style>
         * {
             margin: 0;
@@ -53,7 +49,7 @@
             font-size: 1.1em;
         }
 
-        /* 登入區塊 */
+        /* 簡單登入區塊 */
         .login-container {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -62,6 +58,32 @@
             text-align: center;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             margin-bottom: 30px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .login-container h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .login-form {
+            text-align: left;
+        }
+
+        .login-form input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .login-form input:focus {
+            outline: none;
+            border-color: #667eea;
         }
 
         .user-info {
@@ -281,6 +303,7 @@
             font-size: 14px;
             font-weight: 600;
             z-index: 1000;
+            display: none;
         }
 
         .sync-status.success {
@@ -333,7 +356,7 @@
                 padding: 0;
                 margin: 0;
             }
-            .header, .login-container, .button-group {
+            .header, .login-container, .user-info, .button-group {
                 display: none !important;
             }
             .form-container, .section, .subsection, .service-item {
@@ -356,23 +379,23 @@
             <p>桃園市政府衛生局長期照護科 - 數位化管理系統</p>
         </div>
 
-        <!-- 登入區塊 -->
+        <!-- 簡單登入區塊 -->
         <div class="login-container" id="loginContainer">
-            <h2>請使用 Gmail 帳號登入</h2>
-            <p style="margin-bottom: 20px;">只有授權人員可以使用此系統</p>
-            <div id="g_id_onload"
-                 data-client_id="YOUR_GOOGLE_CLIENT_ID"
-                 data-callback="handleCredentialResponse">
+            <h2>系統登入</h2>
+            <p style="margin-bottom: 20px;">請輸入姓名和密碼</p>
+            <div class="login-form">
+                <input type="text" id="userName" placeholder="請輸入您的姓名" required>
+                <input type="password" id="userPassword" placeholder="請輸入密碼" required>
+                <button class="btn btn-primary" onclick="login()" style="width: 100%;">登入系統</button>
             </div>
-            <div class="g_id_signin" data-type="standard"></div>
         </div>
 
         <!-- 使用者資訊 -->
         <div class="user-info" id="userInfo" style="display: none;">
             <div>
-                <strong>已登入：</strong><span id="userName"></span> (<span id="userEmail"></span>)
+                <strong>已登入：</strong><span id="displayUserName"></span>
             </div>
-            <button class="btn btn-secondary" onclick="signOut()">登出</button>
+            <button class="btn btn-secondary" onclick="logout()">登出</button>
         </div>
 
         <div class="form-container" id="formContainer">
@@ -550,21 +573,17 @@
         </div>
 
         <!-- 同步狀態顯示 -->
-        <div class="sync-status" id="syncStatus" style="display: none;"></div>
+        <div class="sync-status" id="syncStatus"></div>
     </div>
 
     <script>
-        // 設定
+        // ========== 設定區域 ==========
         const GOOGLE_APPS_SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE'; // 請替換為您的 Google Apps Script URL
-        const AUTHORIZED_EMAILS = [
-            'user1@gmail.com',  // 請替換為授權的 email
-            'user2@gmail.com',  // 請替換為授權的 email
-            // 在這裡添加更多授權的 email
-        ];
-
+        const SYSTEM_PASSWORD = 'corn783ivy056'; // 請更改為您想要的密碼
+        
         // 全域變數
         let currentUser = null;
-        let isSignedIn = false;
+        let isLoggedIn = false;
 
         // B碼選項資料
         const bCodeOptions = [
@@ -589,7 +608,7 @@
             '台灣福祉車租賃有限公司',
             '北台灣無障礙運輸產業工會',
             '清山交通有限公司',
-            '金旄租賃有限公司',
+            '金旺租賃有限公司',
             '佳禾通業股份有限公司'
         ];
 
@@ -621,41 +640,51 @@
             'FA01[居家無障礙設施-扶手(每10公分)]'
         ];
 
-        // Google 登入處理
-        function handleCredentialResponse(response) {
-            const payload = JSON.parse(atob(response.credential.split('.')[1]));
-            const email = payload.email;
-            const name = payload.name;
+        // ========== 登入相關功能 ==========
+        
+        // 簡單登入
+        function login() {
+            const userName = document.getElementById('userName').value.trim();
+            const password = document.getElementById('userPassword').value;
             
-            if (AUTHORIZED_EMAILS.includes(email)) {
-                currentUser = { email: email, name: name };
-                isSignedIn = true;
-                
-                document.getElementById('loginContainer').style.display = 'none';
-                document.getElementById('userInfo').style.display = 'flex';
-                document.getElementById('formContainer').style.display = 'block';
-                document.getElementById('userName').textContent = name;
-                document.getElementById('userEmail').textContent = email;
-                
-                showSyncStatus('登入成功！', 'success');
-                initializeForm();
-            } else {
-                showSyncStatus('您沒有權限使用此系統', 'error');
+            if (!userName) {
+                alert('請輸入姓名');
+                return;
             }
+            
+            if (password !== SYSTEM_PASSWORD) {
+                alert('密碼錯誤');
+                return;
+            }
+            
+            currentUser = userName;
+            isLoggedIn = true;
+            
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('userInfo').style.display = 'flex';
+            document.getElementById('formContainer').style.display = 'block';
+            document.getElementById('displayUserName').textContent = userName;
+            
+            showSyncStatus('登入成功！', 'success');
+            initializeForm();
         }
 
         // 登出
-        function signOut() {
-            isSignedIn = false;
+        function logout() {
+            isLoggedIn = false;
             currentUser = null;
             
             document.getElementById('loginContainer').style.display = 'block';
             document.getElementById('userInfo').style.display = 'none';
             document.getElementById('formContainer').style.display = 'none';
             
-            google.accounts.id.disableAutoSelect();
+            document.getElementById('userName').value = '';
+            document.getElementById('userPassword').value = '';
+            
             showSyncStatus('已登出', 'success');
         }
+
+        // ========== 表單相關功能 ==========
 
         // 初始化表單
         function initializeForm() {
@@ -722,15 +751,16 @@
             
             // 添加時間戳記和使用者資訊
             data.lastUpdated = new Date().toISOString();
-            data.userEmail = currentUser.email;
-            data.userName = currentUser.name;
+            data.userName = currentUser;
             
             return data;
         }
 
         // 自動同步到 Google Sheets
         async function autoSync() {
-            if (!isSignedIn) return;
+            if (!isLoggedIn || !GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                return; // 如果沒有設定 Apps Script URL，就不同步
+            }
             
             try {
                 showSyncStatus('同步中...', 'syncing');
@@ -813,8 +843,14 @@
 
         // 頁面載入完成後初始化
         window.onload = function() {
-            // Google API 初始化會自動處理登入
-            console.log('AA01系統已載入，請登入使用');
+            console.log('AA01系統已載入');
+            
+            // 支援 Enter 鍵登入
+            document.getElementById('userPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    login();
+                }
+            });
         };
     </script>
 </body>
