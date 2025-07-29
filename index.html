@@ -520,7 +520,7 @@
                                     清除D碼
                                 </button>
                             </div>
-                            <div id="dCodeContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 15px 0; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
+                            <div id="dCodeContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px; margin: 15px 0;">
                                 <!-- D碼選項會在這裡動態生成 -->
                             </div>
                             <textarea name="dCodeNotes" id="dCodeNotes" placeholder="D碼服務備註（選取項目會自動顯示在這裡）" style="margin-top: 10px;" readonly></textarea>
@@ -528,7 +528,7 @@
 
                         <!-- EF碼服務 -->
                         <div class="service-item">
-                            <label>EF碼服務</label>
+                            <label>E.F碼服務</label>
                             <div style="margin-bottom: 15px;">
                                 <button type="button" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px; margin-right: 10px;" onclick="selectAllEFCodes()">
                                     全選EF碼
@@ -537,68 +537,60 @@
                                     清除EF碼
                                 </button>
                             </div>
-                            <div id="efCodeContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 15px 0; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
+                            <div id="efCodeContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 8px; margin: 15px 0; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
                                 <!-- EF碼選項會在這裡動態生成 -->
                             </div>
-                            <textarea name="efCodeNotes" id="efCodeNotes" placeholder="EF碼服務備註（選取項目會自動顯示在這裡）" style="margin-top: 10px;" readonly></textarea>
+                            <textarea name="efCodeNotes" id="efCodeNotes" placeholder="E.F碼服務備註（選取項目會自動顯示在這裡）" style="margin-top: 10px;" readonly></textarea>
                         </div>
 
                         <!-- G碼服務 -->
                         <div class="service-item">
                             <label>G碼服務</label>
-                            <textarea name="gCode" placeholder="服務代碼+個案及家屬最希望改善之日常生活活動項目..."></textarea>
+                            <textarea name="gCode" placeholder="代碼+名稱"></textarea>
                         </div>
 
-                        <!-- SC碼 -->
+                        <!-- SC碼服務 -->
                         <div class="service-item">
-                            <label>SC碼</label>
-                            <textarea name="scCode" placeholder="服務代碼+個案及家屬最希望改善之日常生活活動項目..."></textarea>
+                            <label>SC碼 (如有比例問題請敘明)</label>
+                            <textarea name="scCode" placeholder="SC碼相關說明"></textarea>
                         </div>
 
                         <!-- 營養餐飲服務 -->
                         <div class="service-item">
                             <label>營養餐飲服務</label>
-                            <textarea name="mealService" placeholder="服務內容說明..."></textarea>
+                            <textarea name="mealService" placeholder="1日核定○○餐（午／晚餐）"></textarea>
                         </div>
 
                         <!-- 緊急救援服務 -->
                         <div class="service-item">
                             <label>緊急救援服務</label>
-                            <textarea name="emergencyService" placeholder="服務內容說明..."></textarea>
-                        </div>
-
-                        <!-- 轉介其他服務資源 -->
-                        <div class="service-item">
-                            <label>轉介其他服務資源</label>
-                            <textarea name="referralServices" placeholder="轉介內容說明..."></textarea>
+                            <textarea name="emergencyService" placeholder="緊急救援服務說明"></textarea>
                         </div>
                     </div>
-                </div>
 
-                <!-- 個案管理員 -->
-                <div class="section">
-                    <h2>個案管理員</h2>
+                    <div class="subsection">
+                        <h3>轉介其他服務資源</h3>
+                        <textarea name="referralServices" placeholder="如:家照、華山基金會、慈濟資源站、高風險通報、身障資源、獨老關懷、家防中心等其他資源，敘述連結狀況或提供的內容等"></textarea>
+                    </div>
+
                     <div class="form-group">
-                        <label for="caseManager">個案管理員姓名</label>
-                        <input type="text" id="caseManager" name="caseManager" placeholder="請輸入個案管理員姓名">
+                        <label for="caseManager">個案管理員 <span class="required">*</span></label>
+                        <input type="text" id="caseManager" name="caseManager" placeholder="如為代理人，請敘明原因" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="additionalNotes">其他備註</label>
+                        <textarea id="additionalNotes" name="additionalNotes" placeholder="個案特殊狀況或其他未盡事宜"></textarea>
                     </div>
                 </div>
 
-                <!-- 其他備註 -->
-                <div class="section">
-                    <h2>其他備註</h2>
-                    <div class="form-group">
-                        <textarea name="additionalNotes" placeholder="其他需要記錄的事項..."></textarea>
-                    </div>
-                </div>
-
-                <!-- 按鈕群組 -->
+                <!-- 按鈕區 -->
                 <div class="button-group">
-                    <button type="button" class="btn btn-primary" onclick="manualSync()">
-                        💾 手動同步
-                    </button>
                     <button type="button" class="btn btn-secondary" onclick="testGoogleConnection()">
                         🔗 測試Google連線
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="manualSync()">
+                        ☁️ 同步到Google表單
                     </button>
                     <button type="button" class="btn btn-warning" onclick="clearForm()">
                         🗑️ 清除資料
@@ -609,171 +601,197 @@
                 </div>
             </form>
         </div>
-    </div>
 
-    <!-- 同步狀態顯示 -->
-    <div id="syncStatus" class="sync-status"></div>
+        <!-- 同步狀態顯示 -->
+        <div class="sync-status" id="syncStatus"></div>
+    </div>
 
     <script>
         // ========== 設定區域 ==========
         const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyEmJmTfpWVRq4u7vyrywpoLkbcMRy-CmvoxSyXgBRsXrYeHRFoET16R466WBjdF52vlQ/exec'; // 請替換為您的 Google Apps Script URL
+        const SYSTEM_PASSWORD = 'corn783ivy056'; // 用戶的實際密碼
         
-        // 登入狀態
+        // 全域變數
+        let currentUser = null;
         let isLoggedIn = false;
-        let currentUser = '';
 
-        // ========== 登入系統 ==========
+        // B碼選項資料
+        const bCodeOptions = [
+            'BA01', 'BA02', 'BA03', 'BA04', 'BA05-1', 'BA05-2', 'BA07', 'BA08', 'BA09', 'BA09a',
+            'BA10', 'BA11', 'BA12', 'BA13', 'BA14', 'BA15-1', 'BA15-2', 'BA16-1', 'BA16-2',
+            'BA17a', 'BA17b', 'BA17c', 'BA17d1', 'BA17d2', 'BA17e', 'BA18', 'BA20', 'BA22', 'BA23', 'BA24',
+            'BB01', 'BB02', 'BB03', 'BB04', 'BB05', 'BB06', 'BB07', 'BB08', 'BB09', 'BB10',
+            'BB11', 'BB12', 'BB13', 'BB14',
+            'BC01', 'BC02', 'BC03', 'BC04', 'BC05', 'BC06', 'BC07', 'BC08', 'BC09', 'BC10',
+            'BC11', 'BC12', 'BC13', 'BC14',
+            'BD01', 'BD02', 'BD03'
+        ];
+
+        // D碼選項資料
+        const dCodeOptions = [
+            '世豪小客車租賃有限公司',
+            '福倫交通股份有限公司',
+            '康健小客車租賃有限公司',
+            '尚倫國際租車有限公司',
+            '新航國際租賃有限公司',
+            '社團法人臺中市綠生活創意行動協會',
+            '台灣福祉車租賃有限公司',
+            '北台灣無障礙運輸產業工會',
+            '清山交通有限公司',
+            '金旺租賃有限公司',
+            '佳禾通業股份有限公司'
+        ];
+
+        // EF碼選項資料
+        const efCodeOptions = [
+            'EA01-1[馬桶增高器]',
+            'EA01-2[便盆椅]',
+            'EA01-3[沐浴椅]',
+            'EB01[單支枴杖-不鏽鋼製]',
+            'EB02[單支拐杖-鋁製]',
+            'EB03[助行器]',
+            'EB04[帶輪型助步車(助行椅)]',
+            'EC01[輪椅-A款(非輕量化量產型)]',
+            'EC02[輪椅-B款(輕量化量產型)]',
+            'EC03[輪椅-C款(量身訂製型)]',
+            'EC04[輪椅附加功能-A款]',
+            'EC05[輪椅附加功能-B款]',
+            'EC06[輪椅附加功能-C款]',
+            'ED01[移位腰帶]',
+            'EG01[氣墊床-A款]',
+            'EG02[氣墊床-B款]',
+            'EG03[輪椅坐墊-A款(連通管型氣囊氣墊座-塑膠材質)]',
+            'EG04[輪椅坐墊-B款(連通管型氣囊氣墊座-橡膠材質)]',
+            'EG05[輪椅坐墊-C款(液態凝膠坐墊)]',
+            'EG06[輪椅坐墊-D款(固態凝膠坐墊)]',
+            'EH01[居家用照顧床]',
+            'EH02[居家用照顧床-附加功能A款(床面升降功能)]',
+            'EH03[居家用照顧床-附加功能B款(電動升降功能)]',
+            'FA01[居家無障礙設施-扶手(每10公分)]'
+        ];
+
+        // ========== 登入相關功能 ==========
+        
+        // 簡單登入
         function login() {
-            const userName = document.getElementById('userName').value.trim();
-            const password = document.getElementById('userPassword').value.trim();
-            
-            if (!userName || !password) {
-                alert('請輸入姓名和密碼');
-                return;
-            }
-            
-            // 簡單密碼驗證（實際應用中應使用更安全的方式）
-            if (password === 'corn783ivy056' || password === '123456') {
-                isLoggedIn = true;
-                currentUser = userName;
+            try {
+                console.log('開始登入流程...');
                 
-                // 隱藏登入區塊，顯示表單
+                const userName = document.getElementById('userName').value.trim();
+                const password = document.getElementById('userPassword').value;
+                
+                console.log('輸入的用戶名:', userName);
+                console.log('輸入的密碼長度:', password.length);
+                console.log('系統設定的密碼:', SYSTEM_PASSWORD);
+                console.log('密碼比對結果:', password === SYSTEM_PASSWORD);
+                
+                if (!userName) {
+                    alert('請輸入姓名');
+                    return;
+                }
+                
+                if (password !== SYSTEM_PASSWORD) {
+                    console.error('密碼錯誤！輸入:', password, '應該是:', SYSTEM_PASSWORD);
+                    alert('密碼錯誤');
+                    return;
+                }
+                
+                console.log('登入驗證通過');
+                
+                currentUser = userName;
+                isLoggedIn = true;
+                
                 document.getElementById('loginContainer').style.display = 'none';
                 document.getElementById('userInfo').style.display = 'flex';
                 document.getElementById('formContainer').style.display = 'block';
                 document.getElementById('displayUserName').textContent = userName;
                 
-                // 初始化表單
+                showSyncStatus('登入成功！', 'success');
                 initializeForm();
                 
-                // 啟動自動同步計時器
+                // 啟動30秒自動同步計時器
                 startAutoSyncTimer();
                 
-                console.log(`用戶 ${userName} 已登入`);
-            } else {
-                alert('密碼錯誤，請重新輸入');
+                console.log('登入完成');
+                
+            } catch (error) {
+                console.error('登入過程發生錯誤:', error);
+                alert('登入發生錯誤，請查看開發者工具');
             }
         }
 
-        // 登出系統
+        // 登出
         function logout() {
-            if (confirm('確定要登出嗎？')) {
-                isLoggedIn = false;
-                currentUser = '';
+            isLoggedIn = false;
+            currentUser = null;
+            
+            // 停止自動同步計時器
+            stopAutoSyncTimer();
+            
+            document.getElementById('loginContainer').style.display = 'block';
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('formContainer').style.display = 'none';
+            
+            document.getElementById('userName').value = '';
+            document.getElementById('userPassword').value = '';
+            
+            showSyncStatus('已登出', 'success');
+        }
+
+        // ========== 表單相關功能 ==========
+
+        // 初始化表單
+        function initializeForm() {
+            try {
+                console.log('初始化表單選項...');
+                generateCodeOptions('bCodeContainer', bCodeOptions, 'bcode');
+                generateCodeOptions('dCodeContainer', dCodeOptions, 'dcode');
+                generateCodeOptions('efCodeContainer', efCodeOptions, 'efcode');
                 
-                // 停止自動同步計時器
-                stopAutoSyncTimer();
+                // 初始化服務備註
+                setTimeout(() => {
+                    updateServiceNotes();
+                }, 200); // 延遲確保選項已生成
                 
-                // 顯示登入區塊，隱藏表單
-                document.getElementById('loginContainer').style.display = 'block';
-                document.getElementById('userInfo').style.display = 'none';
-                document.getElementById('formContainer').style.display = 'none';
+                // 監聽表單變化，自動同步（排除checkbox和number，因為它們有自己的onchange）
+                const form = document.getElementById('aa01Form');
+                const inputs = form.querySelectorAll('input:not([type="checkbox"]):not([type="number"]), textarea:not([readonly]), select');
                 
-                // 清空登入欄位
-                document.getElementById('userName').value = '';
-                document.getElementById('userPassword').value = '';
+                inputs.forEach(input => {
+                    input.addEventListener('change', debounce(autoSync, 2000));
+                    input.addEventListener('input', debounce(autoSync, 2000));
+                });
                 
-                console.log('用戶已登出');
+                console.log('表單初始化完成');
+            } catch (error) {
+                console.error('表單初始化失敗:', error);
             }
         }
 
-        // ========== 表單初始化 ==========
-        function initializeForm() {
-            // 設定今天的日期為預設值
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('visitDate').value = today;
+        // 生成選項
+        function generateCodeOptions(containerId, options, type) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
             
-            // 初始化服務代碼選項
-            initializeBCodes();
-            initializeDCodes();
-            initializeEFCodes();
-            
-            // 綁定事件監聽器
-            bindEventListeners();
-            
-            console.log('表單初始化完成');
+            if (type === 'bcode') {
+                container.innerHTML = options.map(option => `
+                    <div class="bcode-item">
+                        <input type="checkbox" value="${option}" onchange="updateServiceNotes(); autoSync();">
+                        <label style="margin-bottom: 0; font-weight: normal; flex: 1;">${option}</label>
+                        <input type="number" data-code="${option}" min="0" placeholder="次數" onchange="updateServiceNotes(); autoSync();">
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = options.map(option => `
+                    <div class="code-item">
+                        <input type="checkbox" value="${option}" onchange="updateServiceNotes(); autoSync();">
+                        <label style="margin-bottom: 0; font-weight: normal; flex: 1;">${option}</label>
+                    </div>
+                `).join('');
+            }
         }
 
-        // 綁定事件監聽器
-        function bindEventListeners() {
-            // 防抖的自動同步
-            const debouncedAutoSync = debounce(autoSync, 2000);
-            
-            // 為所有輸入欄位添加變更監聽器
-            document.querySelectorAll('input, textarea, select').forEach(element => {
-                element.addEventListener('input', debouncedAutoSync);
-                element.addEventListener('change', debouncedAutoSync);
-            });
-        }
-
-        // ========== 服務代碼初始化 ==========
-        
-        // 初始化B碼選項
-        function initializeBCodes() {
-            const bCodes = [
-                'BA01 身體照顧服務', 'BA02 日常生活照顧服務', 'BA03 家事服務',
-                'BA04 安全看視服務', 'BA05 陪伴服務', 'BA06 巡視服務',
-                'BB01 沐浴車到宅服務', 'BB02 到宅沐浴服務'
-            ];
-            
-            const container = document.getElementById('bCodeContainer');
-            container.innerHTML = '';
-            
-            bCodes.forEach(code => {
-                const item = document.createElement('div');
-                item.className = 'bcode-item';
-                item.innerHTML = `
-                    <input type="checkbox" value="${code}" onchange="updateServiceNotes(); autoSync();">
-                    <span style="flex: 1; margin-left: 8px;">${code}</span>
-                    <input type="number" min="0" max="999" placeholder="次數" onchange="updateServiceNotes(); autoSync();">
-                `;
-                container.appendChild(item);
-            });
-        }
-
-        // 初始化D碼選項
-        function initializeDCodes() {
-            const dCodes = [
-                'DA01 營養餐飲服務', 'DA02 送餐服務', 'DA03 餐具清洗',
-                'DB01 居家環境改善服務', 'DB02 生活輔具服務', 'DB03 無障礙設施改善'
-            ];
-            
-            const container = document.getElementById('dCodeContainer');
-            container.innerHTML = '';
-            
-            dCodes.forEach(code => {
-                const item = document.createElement('div');
-                item.className = 'code-item';
-                item.innerHTML = `
-                    <input type="checkbox" value="${code}" onchange="updateServiceNotes(); autoSync();">
-                    <span style="margin-left: 8px;">${code}</span>
-                `;
-                container.appendChild(item);
-            });
-        }
-
-        // 初始化EF碼選項
-        function initializeEFCodes() {
-            const efCodes = [
-                'EA01 交通接送服務', 'EA02 陪同外出服務', 'EA03 代購服務',
-                'EB01 家庭托顧服務', 'EB02 日間照顧服務', 'EB03 臨時住宿服務'
-            ];
-            
-            const container = document.getElementById('efCodeContainer');
-            container.innerHTML = '';
-            
-            efCodes.forEach(code => {
-                const item = document.createElement('div');
-                item.className = 'code-item';
-                item.innerHTML = `
-                    <input type="checkbox" value="${code}" onchange="updateServiceNotes(); autoSync();">
-                    <span style="margin-left: 8px;">${code}</span>
-                `;
-                container.appendChild(item);
-            });
-        }
-
-        // ========== 服務代碼操作函式 ==========
+        // ========== 全選/清除功能 ==========
         
         // B碼全選
         function selectAllBCodes() {
@@ -905,7 +923,7 @@
             return data;
         }
 
-        // 修正後的自動同步到 Google Sheets
+        // 自動同步到 Google Sheets（改良版）
         async function autoSync() {
             if (!isLoggedIn) {
                 console.log('未登入，跳過自動同步');
@@ -924,26 +942,19 @@
                 const data = collectFormData();
                 console.log('收集到的資料:', data);
                 
-                // 修正後的請求方式 - 增加更多錯誤處理和重試機制
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超時
-                
+                // 使用修改過的請求方式
                 const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'cors',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json',
                     },
                     body: JSON.stringify({
                         action: 'save',
                         data: data
-                    }),
-                    signal: controller.signal
+                    })
                 });
 
-                clearTimeout(timeoutId);
-                
                 console.log('Response status:', response.status);
                 console.log('Response headers:', [...response.headers.entries()]);
 
@@ -964,10 +975,8 @@
             } catch (error) {
                 console.error('自動同步失敗:', error);
                 
-                // 更詳細的錯誤處理
-                if (error.name === 'AbortError') {
-                    showSyncStatus('請求超時，請稍後再試', 'error');
-                } else if (error.name === 'TypeError' && error.message.includes('CORS')) {
+                // 詳細的錯誤處理
+                if (error.name === 'TypeError' && error.message.includes('CORS')) {
                     showSyncStatus('CORS錯誤：請檢查Apps Script設定', 'error');
                 } else if (error.message.includes('Failed to fetch')) {
                     showSyncStatus('網路錯誤：請檢查連線', 'error');
@@ -977,7 +986,7 @@
             }
         }
 
-        // 修正後的手動同步功能
+        // 手動同步功能（改良版）
         async function manualSync() {
             if (!isLoggedIn) {
                 alert('請先登入系統');
@@ -996,13 +1005,15 @@
             try {
                 showSyncStatus('測試連線中...', 'syncing');
                 
-                // 先發送一個簡單的GET請求測試連線
                 const testResponse = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-                    method: 'GET',
+                    method: 'POST',
                     mode: 'cors',
                     headers: {
-                        'Accept': 'application/json',
-                    }
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'test'
+                    })
                 });
                 
                 if (testResponse.ok) {
@@ -1012,39 +1023,19 @@
                     // 連線成功後進行實際同步
                     await autoSync();
                 } else {
-                    throw new Error(`連線測試失敗: ${testResponse.status} ${testResponse.statusText}`);
+                    throw new Error(`連線測試失敗: ${testResponse.status}`);
                 }
                 
             } catch (error) {
                 console.error('手動同步失敗:', error);
                 showSyncStatus('同步失敗，請查看Console', 'error');
                 
-                // 提供更詳細的錯誤說明
-                let errorMessage = `同步失敗！\n\n錯誤：${error.message}\n\n`;
-                
-                if (error.message.includes('CORS')) {
-                    errorMessage += '可能的解決方案：\n';
-                    errorMessage += '1. 確認 Apps Script 已正確部署\n';
-                    errorMessage += '2. 檢查部署權限是否設為「任何人」\n';
-                    errorMessage += '3. 確認 Apps Script 包含 doOptions 函式\n';
-                    errorMessage += '4. 嘗試重新部署 Apps Script';
-                } else if (error.message.includes('Failed to fetch')) {
-                    errorMessage += '可能的解決方案：\n';
-                    errorMessage += '1. 檢查網路連線\n';
-                    errorMessage += '2. 確認 Apps Script URL 是否正確\n';
-                    errorMessage += '3. 檢查防火牆設定';
-                } else {
-                    errorMessage += '請檢查：\n';
-                    errorMessage += '1. Google Apps Script URL 是否正確\n';
-                    errorMessage += '2. Apps Script 部署權限是否設為「任何人」\n';
-                    errorMessage += '3. 瀏覽器Console的詳細錯誤訊息';
-                }
-                
-                alert(errorMessage);
+                // 提供詳細的錯誤說明
+                alert(`同步失敗！\n\n錯誤：${error.message}\n\n請檢查：\n1. Google Apps Script URL 是否正確\n2. Apps Script 部署權限是否設為「任何人」\n3. 瀏覽器Console的詳細錯誤訊息`);
             }
         }
 
-        // 修正後的測試連線功能
+        // 測試連線功能
         async function testGoogleConnection() {
             if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
                 alert('請先設定 Google Apps Script URL');
@@ -1055,66 +1046,24 @@
                 console.log('測試 Google Apps Script 連線...');
                 console.log('URL:', GOOGLE_APPS_SCRIPT_URL);
                 
-                showSyncStatus('測試連線中...', 'syncing');
-                
-                // 先測試 OPTIONS 請求（預檢請求）
-                try {
-                    const optionsResponse = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-                        method: 'OPTIONS',
-                        mode: 'cors'
-                    });
-                    console.log('OPTIONS 請求狀態:', optionsResponse.status);
-                    console.log('OPTIONS 回應標頭:', [...optionsResponse.headers.entries()]);
-                } catch (optionsError) {
-                    console.warn('OPTIONS 請求失敗:', optionsError);
-                }
-                
-                // 測試 GET 請求
                 const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
                     method: 'GET',
-                    mode: 'cors',
-                    headers: {
-                        'Accept': 'application/json',
-                    }
+                    mode: 'cors'
                 });
                 
-                console.log('GET 請求狀態:', response.status);
-                console.log('GET 回應標頭:', [...response.headers.entries()]);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
+                console.log('測試回應狀態:', response.status);
                 const data = await response.json();
                 console.log('測試回應資料:', data);
                 
                 if (data.success) {
-                    showSyncStatus('連線測試成功 ✓', 'success');
-                    alert('Google Apps Script 連線成功！\n\n' + data.message + '\n\n版本：' + (data.version || '未知'));
+                    alert('Google Apps Script 連線成功！\n\n' + data.message);
                 } else {
-                    throw new Error(data.error || '未知錯誤');
+                    alert('連線失敗：' + (data.error || '未知錯誤'));
                 }
                 
             } catch (error) {
                 console.error('連線測試錯誤:', error);
-                showSyncStatus('連線測試失敗', 'error');
-                
-                let errorMessage = '連線測試失敗：\n\n' + error.message + '\n\n';
-                
-                if (error.message.includes('CORS')) {
-                    errorMessage += '這是 CORS 錯誤，請檢查：\n';
-                    errorMessage += '1. Apps Script 是否包含 doOptions 函式\n';
-                    errorMessage += '2. 部署權限是否設為「任何人」\n';
-                    errorMessage += '3. 是否使用最新的部署版本';
-                } else if (error.message.includes('Failed to fetch')) {
-                    errorMessage += '這是網路錯誤，請檢查：\n';
-                    errorMessage += '1. 網路連線是否正常\n';
-                    errorMessage += '2. Apps Script URL 是否正確\n';
-                    errorMessage += '3. 防火牆是否阻擋請求';
-                }
-                
-                errorMessage += '\n\n請查看瀏覽器 Console 獲取詳細資訊';
-                alert(errorMessage);
+                alert('連線測試失敗：\n\n' + error.message + '\n\n請檢查Console獲取詳細資訊');
             }
         }
 
@@ -1223,4 +1172,3 @@
     </script>
 </body>
 </html>
-
