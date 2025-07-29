@@ -489,10 +489,18 @@
                         <!-- B碼服務 -->
                         <div class="service-item">
                             <label>B碼服務 (輪派/指定單位)</label>
+                            <div style="margin-bottom: 15px;">
+                                <button type="button" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px; margin-right: 10px;" onclick="selectAllBCodes()">
+                                    全選B碼
+                                </button>
+                                <button type="button" class="btn btn-warning" style="padding: 8px 16px; font-size: 12px;" onclick="clearAllBCodes()">
+                                    清除B碼
+                                </button>
+                            </div>
                             <div id="bCodeContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 15px 0; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
                                 <!-- B碼選項會在這裡動態生成 -->
                             </div>
-                            <textarea name="bCodeNotes" placeholder="B碼服務備註" style="margin-top: 10px;"></textarea>
+                            <textarea name="bCodeNotes" id="bCodeNotes" placeholder="B碼服務備註（選取項目會自動顯示在這裡）" style="margin-top: 10px;" readonly></textarea>
                         </div>
 
                         <!-- C碼服務 -->
@@ -504,19 +512,35 @@
                         <!-- D碼服務 -->
                         <div class="service-item">
                             <label>D碼服務</label>
+                            <div style="margin-bottom: 15px;">
+                                <button type="button" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px; margin-right: 10px;" onclick="selectAllDCodes()">
+                                    全選D碼
+                                </button>
+                                <button type="button" class="btn btn-warning" style="padding: 8px 16px; font-size: 12px;" onclick="clearAllDCodes()">
+                                    清除D碼
+                                </button>
+                            </div>
                             <div id="dCodeContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px; margin: 15px 0;">
                                 <!-- D碼選項會在這裡動態生成 -->
                             </div>
-                            <textarea name="dCodeNotes" placeholder="D碼服務備註" style="margin-top: 10px;"></textarea>
+                            <textarea name="dCodeNotes" id="dCodeNotes" placeholder="D碼服務備註（選取項目會自動顯示在這裡）" style="margin-top: 10px;" readonly></textarea>
                         </div>
 
                         <!-- EF碼服務 -->
                         <div class="service-item">
                             <label>E.F碼服務</label>
+                            <div style="margin-bottom: 15px;">
+                                <button type="button" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px; margin-right: 10px;" onclick="selectAllEFCodes()">
+                                    全選EF碼
+                                </button>
+                                <button type="button" class="btn btn-warning" style="padding: 8px 16px; font-size: 12px;" onclick="clearAllEFCodes()">
+                                    清除EF碼
+                                </button>
+                            </div>
                             <div id="efCodeContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 8px; margin: 15px 0; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
                                 <!-- EF碼選項會在這裡動態生成 -->
                             </div>
-                            <textarea name="efCodeNotes" placeholder="E.F碼服務備註" style="margin-top: 10px;"></textarea>
+                            <textarea name="efCodeNotes" id="efCodeNotes" placeholder="E.F碼服務備註（選取項目會自動顯示在這裡）" style="margin-top: 10px;" readonly></textarea>
                         </div>
 
                         <!-- G碼服務 -->
@@ -562,6 +586,9 @@
 
                 <!-- 按鈕區 -->
                 <div class="button-group">
+                    <button type="button" class="btn btn-secondary" onclick="manualSync()">
+                        ☁️ 同步到Google表單
+                    </button>
                     <button type="button" class="btn btn-warning" onclick="clearForm()">
                         🗑️ 清除資料
                     </button>
@@ -578,8 +605,8 @@
 
     <script>
         // ========== 設定區域 ==========
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyuGQ_DkMGc2qxN7he2pgKvfTheGVQYu9WLQ6EilMXLWmXFbYTH26q47s7-s884XzSf/exec'; // 請替換為您的 Google Apps Script URL
-        const SYSTEM_PASSWORD = 'corn783ivy056'; // 請更改為您想要的密碼
+        const GOOGLE_APPS_SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE'; // 請替換為您的 Google Apps Script URL
+        const SYSTEM_PASSWORD = 'aa01care2025'; // 請更改為您想要的密碼
         
         // 全域變數
         let currentUser = null;
@@ -667,12 +694,18 @@
             
             showSyncStatus('登入成功！', 'success');
             initializeForm();
+            
+            // 啟動30秒自動同步計時器
+            startAutoSyncTimer();
         }
 
         // 登出
         function logout() {
             isLoggedIn = false;
             currentUser = null;
+            
+            // 停止自動同步計時器
+            stopAutoSyncTimer();
             
             document.getElementById('loginContainer').style.display = 'block';
             document.getElementById('userInfo').style.display = 'none';
@@ -688,18 +721,30 @@
 
         // 初始化表單
         function initializeForm() {
-            generateCodeOptions('bCodeContainer', bCodeOptions, 'bcode');
-            generateCodeOptions('dCodeContainer', dCodeOptions, 'dcode');
-            generateCodeOptions('efCodeContainer', efCodeOptions, 'efcode');
-            
-            // 監聽表單變化，自動同步
-            const form = document.getElementById('aa01Form');
-            const inputs = form.querySelectorAll('input, textarea, select');
-            
-            inputs.forEach(input => {
-                input.addEventListener('change', debounce(autoSync, 2000));
-                input.addEventListener('input', debounce(autoSync, 2000));
-            });
+            try {
+                console.log('初始化表單選項...');
+                generateCodeOptions('bCodeContainer', bCodeOptions, 'bcode');
+                generateCodeOptions('dCodeContainer', dCodeOptions, 'dcode');
+                generateCodeOptions('efCodeContainer', efCodeOptions, 'efcode');
+                
+                // 初始化服務備註
+                setTimeout(() => {
+                    updateServiceNotes();
+                }, 200); // 延遲確保選項已生成
+                
+                // 監聽表單變化，自動同步（排除checkbox和number，因為它們有自己的onchange）
+                const form = document.getElementById('aa01Form');
+                const inputs = form.querySelectorAll('input:not([type="checkbox"]):not([type="number"]), textarea:not([readonly]), select');
+                
+                inputs.forEach(input => {
+                    input.addEventListener('change', debounce(autoSync, 2000));
+                    input.addEventListener('input', debounce(autoSync, 2000));
+                });
+                
+                console.log('表單初始化完成');
+            } catch (error) {
+                console.error('表單初始化失敗:', error);
+            }
         }
 
         // 生成選項
@@ -710,18 +755,119 @@
             if (type === 'bcode') {
                 container.innerHTML = options.map(option => `
                     <div class="bcode-item">
-                        <input type="checkbox" value="${option}" onchange="autoSync()">
+                        <input type="checkbox" value="${option}" onchange="updateServiceNotes(); autoSync();">
                         <label style="margin-bottom: 0; font-weight: normal; flex: 1;">${option}</label>
-                        <input type="number" data-code="${option}" min="0" placeholder="次數" onchange="autoSync()">
+                        <input type="number" data-code="${option}" min="0" placeholder="次數" onchange="updateServiceNotes(); autoSync();">
                     </div>
                 `).join('');
             } else {
                 container.innerHTML = options.map(option => `
                     <div class="code-item">
-                        <input type="checkbox" value="${option}" onchange="autoSync()">
+                        <input type="checkbox" value="${option}" onchange="updateServiceNotes(); autoSync();">
                         <label style="margin-bottom: 0; font-weight: normal; flex: 1;">${option}</label>
                     </div>
                 `).join('');
+            }
+        }
+
+        // ========== 全選/清除功能 ==========
+        
+        // B碼全選
+        function selectAllBCodes() {
+            document.querySelectorAll('#bCodeContainer input[type="checkbox"]').forEach(cb => cb.checked = true);
+            updateServiceNotes();
+            autoSync();
+        }
+
+        // B碼清除
+        function clearAllBCodes() {
+            document.querySelectorAll('#bCodeContainer input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('#bCodeContainer input[type="number"]').forEach(input => input.value = '');
+            updateServiceNotes();
+            autoSync();
+        }
+
+        // D碼全選
+        function selectAllDCodes() {
+            document.querySelectorAll('#dCodeContainer input[type="checkbox"]').forEach(cb => cb.checked = true);
+            updateServiceNotes();
+            autoSync();
+        }
+
+        // D碼清除
+        function clearAllDCodes() {
+            document.querySelectorAll('#dCodeContainer input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateServiceNotes();
+            autoSync();
+        }
+
+        // EF碼全選
+        function selectAllEFCodes() {
+            document.querySelectorAll('#efCodeContainer input[type="checkbox"]').forEach(cb => cb.checked = true);
+            updateServiceNotes();
+            autoSync();
+        }
+
+        // EF碼清除
+        function clearAllEFCodes() {
+            document.querySelectorAll('#efCodeContainer input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateServiceNotes();
+            autoSync();
+        }
+
+        // ========== 自動更新服務備註 ==========
+        
+        function updateServiceNotes() {
+            try {
+                // 更新B碼備註
+                const bCodeItems = [];
+                document.querySelectorAll('#bCodeContainer .bcode-item').forEach(item => {
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    const countInput = item.querySelector('input[type="number"]');
+                    if (checkbox && countInput) {
+                        const code = checkbox.value;
+                        const count = parseInt(countInput.value) || 0;
+
+                        if (checkbox.checked) {
+                            if (count > 0) {
+                                bCodeItems.push(`${code} × ${count}次`);
+                            } else {
+                                bCodeItems.push(code);
+                            }
+                        }
+                    }
+                });
+                
+                const bCodeNotesElement = document.getElementById('bCodeNotes');
+                if (bCodeNotesElement) {
+                    bCodeNotesElement.value = bCodeItems.join('、');
+                }
+
+                // 更新D碼備註
+                const dCodeItems = [];
+                document.querySelectorAll('#dCodeContainer input[type="checkbox"]:checked').forEach(cb => {
+                    dCodeItems.push(cb.value);
+                });
+                
+                const dCodeNotesElement = document.getElementById('dCodeNotes');
+                if (dCodeNotesElement) {
+                    dCodeNotesElement.value = dCodeItems.join('、');
+                }
+
+                // 更新EF碼備註
+                const efCodeItems = [];
+                document.querySelectorAll('#efCodeContainer input[type="checkbox"]:checked').forEach(cb => {
+                    efCodeItems.push(cb.value);
+                });
+                
+                const efCodeNotesElement = document.getElementById('efCodeNotes');
+                if (efCodeNotesElement) {
+                    efCodeNotesElement.value = efCodeItems.join('、');
+                }
+                
+                console.log('服務備註已更新'); // 除錯用
+            } catch (error) {
+                console.error('更新服務備註失敗:', error);
             }
         }
 
@@ -758,11 +904,18 @@
 
         // 自動同步到 Google Sheets
         async function autoSync() {
-            if (!isLoggedIn || !GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-                return; // 如果沒有設定 Apps Script URL，就不同步
+            if (!isLoggedIn) {
+                console.log('未登入，跳過自動同步');
+                return;
+            }
+            
+            if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                console.log('Google Apps Script URL 未設定，跳過自動同步');
+                return;
             }
             
             try {
+                console.log('開始自動同步...');
                 showSyncStatus('同步中...', 'syncing');
                 const data = collectFormData();
                 
@@ -777,17 +930,68 @@
                     })
                 });
 
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
                 const result = await response.json();
                 
                 if (result.success) {
-                    showSyncStatus('資料已同步', 'success');
+                    showSyncStatus('資料已同步到Google表單', 'success');
+                    console.log('自動同步成功');
                 } else {
                     throw new Error(result.error || '同步失敗');
                 }
                 
             } catch (error) {
-                console.error('同步失敗:', error);
-                showSyncStatus('同步失敗', 'error');
+                console.error('自動同步失敗:', error);
+                showSyncStatus('Google表單同步失敗', 'error');
+            }
+        }
+
+        // 手動同步功能
+        async function manualSync() {
+            if (!isLoggedIn) {
+                alert('請先登入系統');
+                return;
+            }
+            
+            if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                alert('請先設定Google Apps Script URL');
+                return;
+            }
+            
+            console.log('手動同步開始...');
+            await autoSync();
+        }
+
+        // 30秒自動同步計時器
+        let autoSyncTimer = null;
+
+        // 啟動自動同步計時器
+        function startAutoSyncTimer() {
+            // 先清除現有計時器
+            if (autoSyncTimer) {
+                clearInterval(autoSyncTimer);
+            }
+            
+            // 設定30秒計時器
+            autoSyncTimer = setInterval(function() {
+                if (isLoggedIn && GOOGLE_APPS_SCRIPT_URL && GOOGLE_APPS_SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                    console.log('30秒自動同步觸發');
+                    autoSync();
+                }
+            }, 30000); // 30秒 = 30000毫秒
+            
+            console.log('30秒自動同步計時器已啟動');
+        }
+
+        // 停止自動同步計時器
+        function stopAutoSyncTimer() {
+            if (autoSyncTimer) {
+                clearInterval(autoSyncTimer);
+                autoSyncTimer = null;
+                console.log('30秒自動同步計時器已停止');
             }
         }
 
@@ -800,8 +1004,17 @@
                 document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
                 document.querySelectorAll('input[type="number"]').forEach(input => input.value = '');
                 
+                // 清除服務備註
+                setTimeout(() => {
+                    updateServiceNotes();
+                }, 100); // 延遲一點確保reset完成
+                
                 showSyncStatus('資料已清除', 'success');
-                autoSync(); // 同步空白表單
+                
+                // 延遲同步，確保備註已更新
+                setTimeout(() => {
+                    autoSync();
+                }, 200);
             }
         }
 
@@ -851,6 +1064,8 @@
                     login();
                 }
             });
+            
+            console.log('系統初始化完成');
         };
     </script>
 </body>
